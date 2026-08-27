@@ -28,7 +28,7 @@
             <!-- deeplink.navigate: app_links' custom URL scheme, e.g.
                  simpleread://open?path=/learn/x. Disabling Flutter's own
                  default deep-linking is required from Flutter 3.24+ so
-                 app_links is the one handling it -- see
+                 app_links is the one handling it, see:
                  https://docs.flutter.dev/cookbook/navigation/set-up-app-links#2-modify-androidmanifest-xml -->
             <meta-data
                 android:name="flutter_deeplinking_enabled"

@@ -25,7 +25,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<!-- deeplink.navigate: app_links' custom URL scheme,
-	     simpleread://open?path=/learn/x. No Universal Links entry here --
+	     simpleread://open?path=/learn/x. No Universal Links entry here:
 	     those need a real domain hosting apple-app-site-association, which
 	     this PoC doesn't have; see README.md. -->
 	<key>FlutterDeepLinkingEnabled</key>
