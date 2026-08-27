@@ -6,9 +6,13 @@ import '../bridge/bridge_dispatcher.dart';
 import '../bridge/bridge_events.dart';
 import '../bridge/bridge_message.dart';
 import '../bridge/biometric_handler.dart';
+import '../bridge/calendar_event_handler.dart';
+import '../bridge/camera_capture_handler.dart';
+import '../bridge/content_download_handler.dart';
 import '../bridge/native_to_js.dart';
 import '../bridge/playback_state_store.dart';
-import '../bridge/stub_handlers.dart';
+import '../bridge/push_register_handler.dart';
+import '../bridge/share_sheet_handler.dart';
 import '../bridge/webview_bridge_registry.dart';
 
 /// The webview screen: loads the live SimpleRead site UNCHANGED and wires
@@ -62,11 +66,23 @@ class _WebviewScreenState extends State<WebviewScreen> {
     );
     _dispatcher.registerRequestHandler(
       BridgeRequestEvents.pushRegister,
-      handlePushRegisterStub,
+      PushRegisterHandler().handle,
     );
     _dispatcher.registerRequestHandler(
       BridgeRequestEvents.cameraCapture,
-      handleCameraCaptureStub,
+      CameraCaptureHandler().handle,
+    );
+    _dispatcher.registerRequestHandler(
+      BridgeRequestEvents.contentDownload,
+      ContentDownloadHandler().handle,
+    );
+    _dispatcher.registerRequestHandler(
+      BridgeRequestEvents.shareSheet,
+      ShareSheetHandler().handle,
+    );
+    _dispatcher.registerRequestHandler(
+      BridgeRequestEvents.calendarEvent,
+      CalendarEventHandler().handle,
     );
     _dispatcher.registerFireAndForgetHandler(
       BridgeFireAndForgetEvents.mediaPlaybackState,

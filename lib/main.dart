@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'bridge/deeplink_handler.dart';
 import 'screens/home_screen.dart';
 
+/// Kept alive for the app's lifetime (a top-level final, referenced from
+/// main()) rather than a local variable -- deep links must be caught for as
+/// long as the app runs, not just while some particular screen is mounted.
+final DeeplinkHandler appDeeplinkHandler = DeeplinkHandler();
+
 void main() {
+  appDeeplinkHandler.start();
   runApp(const SimpleReadShellApp());
 }
 

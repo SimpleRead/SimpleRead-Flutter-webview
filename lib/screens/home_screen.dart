@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../bridge/push_notification_service.dart';
 import '../bridge/webview_bridge_registry.dart';
 import 'webview_screen.dart';
 
@@ -24,6 +25,39 @@ class HomeScreen extends StatelessWidget {
           sent
               ? 'Sent media.playback.control { action: "pause" } to the page.'
               : 'No SimpleRead webview is open — open it first, then pause.',
+        ),
+      ),
+    );
+  }
+
+  /// Demonstrates `push.received` + real local notification display with a
+  /// synthetic payload -- no external push provider needed. A real FCM
+  /// message would drive the same `PushNotificationService` +
+  /// `WebviewBridgeRegistry.sendPushReceived` path; see README.md for why
+  /// that part is externally blocked in this PoC.
+  Future<void> _simulatePush(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    const kind = 'chapter_ready';
+    final payload = {
+      'chapterId': 'demo-chapter-1',
+      'title': 'Chapter 7: The Bridge',
+    };
+
+    await PushNotificationService().showForPushReceived(
+      kind: kind,
+      payload: payload,
+    );
+    final sentToJs = await WebviewBridgeRegistry.instance.sendPushReceived(
+      kind,
+      payload,
+    );
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          sentToJs
+              ? 'Local notification shown, and push.received sent to the page.'
+              : 'Local notification shown (no SimpleRead webview open to also notify).',
         ),
       ),
     );
@@ -64,6 +98,13 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () => _pausePlayback(context),
                 icon: const Icon(Icons.pause_circle_outline),
                 label: const Text('Pause playback'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const Key('simulate_push_button'),
+                onPressed: () => _simulatePush(context),
+                icon: const Icon(Icons.notifications_active_outlined),
+                label: const Text('Simulate push'),
               ),
             ],
           ),
