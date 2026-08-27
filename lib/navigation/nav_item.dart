@@ -16,13 +16,15 @@ sealed class NavItem {
 
   /// Parses the raw `List` from the event payload. Strict like
   /// [BridgeMessage.fromJsonString]: any malformed item throws
-  /// [BridgeParseException] rather than being skipped or coerced.
+  /// [BridgeParseException] rather than being skipped or coerced. An empty
+  /// string is treated as missing, same as `id`/`event` in
+  /// [BridgeMessage.fromJsonString].
   static List<NavItem> parseList(List<dynamic> raw) =>
       raw.map(_parseOne).toList();
 
   static NavItem _parseOne(dynamic raw) {
     if (raw is! Map) {
-      throw BridgeParseException('nav item is not an object: $raw');
+      throw const BridgeParseException('nav item is not an object');
     }
 
     switch (raw['type']) {
@@ -35,7 +37,7 @@ sealed class NavItem {
       case 'group':
         final rawChildren = raw['children'];
         if (rawChildren is! List) {
-          throw BridgeParseException('group item missing "children": $raw');
+          throw const BridgeParseException('group item missing "children"');
         }
         return NavGroupItem(
           label: _requireString(raw, 'label'),
@@ -43,20 +45,20 @@ sealed class NavItem {
           children: rawChildren.map((c) {
             final child = _parseOne(c);
             if (child is! NavLinkItem) {
-              throw BridgeParseException('group child is not a link: $c');
+              throw const BridgeParseException('group child is not a link');
             }
             return child;
           }).toList(),
         );
       default:
-        throw BridgeParseException('unknown nav item type: ${raw['type']}');
+        throw const BridgeParseException('unknown nav item type');
     }
   }
 
   static String _requireString(Map raw, String key) {
     final value = raw[key];
     if (value is! String || value.isEmpty) {
-      throw BridgeParseException('nav item missing "$key": $raw');
+      throw BridgeParseException('nav item missing "$key"');
     }
     return value;
   }

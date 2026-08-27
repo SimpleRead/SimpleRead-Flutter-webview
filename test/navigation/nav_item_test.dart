@@ -29,5 +29,39 @@ void main() {
         throwsA(isA<BridgeParseException>()),
       );
     });
+
+    test('throws BridgeParseException when group "children" is not a list', () {
+      expect(
+        () => NavItem.parseList([
+          {'type': 'group', 'label': 'Gestão', 'icon': 'school', 'children': 'oops'},
+        ]),
+        throwsA(isA<BridgeParseException>()),
+      );
+    });
+
+    test('throws BridgeParseException when a group child is not a link', () {
+      expect(
+        () => NavItem.parseList([
+          {
+            'type': 'group',
+            'label': 'Gestão',
+            'icon': 'school',
+            'children': [
+              {'type': 'group', 'label': 'Nested', 'icon': 'school', 'children': []},
+            ],
+          },
+        ]),
+        throwsA(isA<BridgeParseException>()),
+      );
+    });
+
+    test('throws BridgeParseException for an unknown item type', () {
+      expect(
+        () => NavItem.parseList([
+          {'type': 'divider', 'label': 'x', 'icon': 'x'},
+        ]),
+        throwsA(isA<BridgeParseException>()),
+      );
+    });
   });
 }
