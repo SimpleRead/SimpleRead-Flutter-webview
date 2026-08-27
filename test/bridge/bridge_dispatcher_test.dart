@@ -40,12 +40,12 @@ void main() {
       expect(received, {'title': 'Chapter 1', 'isPlaying': true});
     });
 
-    test('returns null for an event with no registered handler (a stub)',
-        () async {
+    test('returns null for an event with no registered handler on this '
+        'dispatcher instance', () async {
       final dispatcher = BridgeDispatcher();
 
       final result = await dispatcher.handleIncoming(
-        '{"id":"evt-2","event":"share.sheet","payload":{}}',
+        '{"id":"evt-2","event":"some.unregistered.event","payload":{}}',
       );
 
       expect(result, isNull);

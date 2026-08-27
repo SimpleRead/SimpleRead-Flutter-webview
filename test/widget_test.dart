@@ -14,13 +14,14 @@ void main() {
     WebviewBridgeRegistry.instance.value = null;
   });
 
-  testWidgets('home screen shows title and both action buttons',
+  testWidgets('home screen shows title and all action buttons',
       (WidgetTester tester) async {
     await tester.pumpWidget(const SimpleReadShellApp());
 
     expect(find.text('SimpleRead Native Shell'), findsOneWidget);
     expect(find.byKey(const Key('open_simpleread_button')), findsOneWidget);
     expect(find.byKey(const Key('pause_playback_button')), findsOneWidget);
+    expect(find.byKey(const Key('simulate_push_button')), findsOneWidget);
   });
 
   testWidgets(
@@ -46,4 +47,13 @@ void main() {
   // of the (large) webview_flutter platform interface, disproportionate to
   // this PoC's scope). The bridge logic WebviewScreen wires up is covered
   // directly in test/bridge/*, independent of any real webview.
+  //
+  // Also deliberately not tested here: tapping "Simulate push". It drives
+  // flutter_local_notifications' real platform channel, which (like
+  // WebViewPlatform above) has no implementation registered in the
+  // widget-test harness. PushNotificationService's payload -> notification
+  // mapping is covered directly in
+  // test/bridge/push_notification_service_test.dart; the real local
+  // notification display is demonstrated manually on a device/simulator —
+  // see README.md.
 }
