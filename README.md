@@ -14,13 +14,21 @@ over a JS↔native bridge.
 
 ## What's here
 
-- **Home screen** (`lib/screens/home_screen.dart`) — plain native Flutter,
-  no webview. Has an "Open SimpleRead" button (pushes the webview screen),
-  a "Pause playback" button (demonstrates native → JS push, see below), and
-  a "Simulate push" button (real local notification + `push.received`
-  dispatch with a synthetic payload, see below). This is the app's "more
-  than a repackaged website" surface, relevant to Apple/Google app-store
-  minimum-functionality review.
+**No native home screen.** The app opens directly into the webview screen —
+there is no plain-native landing screen anymore (there was one; it was
+removed by request so the app goes straight to SimpleRead, no extra tap).
+**This reopens a risk the earlier research in this thread specifically
+flagged**: Apple 4.2 / Google Play minimum-functionality review wants
+genuine native functionality beyond "a website in a WebView," and a native
+screen the user sees before any web content was this PoC's answer to that.
+Removing it does not remove the underlying real integrations (biometric,
+push, camera, download, share, calendar, deep link all still exist and
+still work) — but there is currently no native UI screen demonstrating any
+of them to a reviewer. Before a real submission, this needs one of: a
+persistent native chrome around the webview (e.g. a native bottom
+tab/navigation bar, still under discussion at the time of writing), or
+some other native surface reachable without leaving the app.
+
 - **Webview screen** (`lib/screens/webview_screen.dart`) — `webview_flutter`
   (the official, pub.dev **verified-publisher `flutter.dev`** package —
   confirmed on its pub.dev page before adding it, not assumed) loading
@@ -47,8 +55,9 @@ over a JS↔native bridge.
     (`firebase_core` + `firebase_messaging`) — externally blocked short of
     a real Firebase project; see below.
   - `push_notification_service.dart` — **real** local notification display
-    for `push.received` (`flutter_local_notifications`), driven by the home
-    screen's "Simulate push" button.
+    for `push.received` (`flutter_local_notifications`); demonstrated by
+    `showForPushReceived()` directly (see `integration_test/app_test.dart`)
+    now that there's no dev-screen button to drive it manually.
   - `camera_capture_handler.dart` — **real** `camera.capture` handler
     (`image_picker`), untested on-device (no camera hardware in a
     simulator/emulator); see below.
@@ -60,8 +69,8 @@ over a JS↔native bridge.
     (`add_2_calendar`).
   - `deeplink_handler.dart` — **real** `deeplink.navigate` listener
     (`app_links`, custom URL scheme only); see below.
-  - `webview_bridge_registry.dart` — lets native code (the home screen's
-    buttons, a download in progress, a deep link) reach the live webview's
+  - `webview_bridge_registry.dart` — lets native code (a download in
+    progress, a deep link) reach the live webview's
     JS runtime (see "native → JS" below) without either side holding a
     direct reference to the other.
 - **`integration_test/app_test.dart`** — on-device verification for the two
@@ -105,9 +114,9 @@ sandbox-limited** with the concrete reason.
 |---|---|---|
 | `auth.biometric` | **Real, verified** | `BiometricAuthHandler` (local_auth) — a real Face ID/Touch ID/fingerprint prompt. Maps `LocalAuthExceptionCode` to the contract's `not_enrolled` / `user_cancelled` / `failed` reasons. Unit-tested via a fake `LocalAuthPlatform`. |
 | `media.playback.state` | **Real, verified** | Fire-and-forget JS→native; stored in `PlaybackStateStore`, shown in the webview screen's bottom overlay. |
-| `media.playback.control` | **Real, verified** | Native→JS; the home screen's "Pause playback" button sends `{action: 'pause'}` to the currently-open webview via `WebviewBridgeRegistry` + `runJavaScript`. |
+| `media.playback.control` | **Real (logic verified); no manual UI trigger anymore** | Native→JS; sends `{action: 'pause'}` to the currently-open webview via `WebviewBridgeRegistry` + `runJavaScript`. Previously demonstrated by a home-screen "Pause playback" button; that screen was removed (see "No native home screen" above), so this is currently only exercised by `test/bridge/native_to_js_test.dart` + `webview_bridge_registry` usage, not a live manual demo. |
 | `push.register` | **Real, externally blocked** | `PushRegisterHandler` (`firebase_core` + `firebase_messaging`) — real permission request + `getToken()` call. **Remote delivery requires the app owner to create a Firebase project and place `google-services.json` at `android/app/google-services.json` and `GoogleService-Info.plist` at `ios/Runner/GoogleService-Info.plist` (added to the Xcode project) — not done here, no such project exists.** With neither file present, the real, unmapped error observed on-device is `FirebaseException: [core/not-initialized] Firebase has not been correctly initialized.` (see "On-device verification"). Unit-tested (every branch) via injected fakes. |
-| `push.received` | **Real (local half verified); remote half externally blocked** | `PushNotificationService` (`flutter_local_notifications`) shows a **real** local notification, and `WebviewBridgeRegistry.sendPushReceived` dispatches the JS event — both driven by the home screen's "Simulate push" button with a synthetic payload, no push provider needed. A real FCM message arriving via `FirebaseMessaging.onMessage` would drive the identical path, but that needs the same Firebase project as `push.register` above. Payload→notification mapping is unit-tested; the actual on-screen banner is **real, sandbox-limited**: `initialize()` correctly triggers iOS's real "app wants to send notifications" permission prompt on first use (screenshot below) — granting it needs one manual tap this sandbox has no UI-automation tool for. Once granted (a one-time step for any iOS app, not a bug here), the button reliably shows the banner. |
+| `push.received` | **Real (local half verified); remote half externally blocked** | `PushNotificationService` (`flutter_local_notifications`) shows a **real** local notification, and `WebviewBridgeRegistry.sendPushReceived` dispatches the JS event. Demonstrated directly via `showForPushReceived()` in `integration_test/app_test.dart` (no dev-screen button anymore — see "No native home screen" above), with a synthetic payload, no push provider needed. A real FCM message arriving via `FirebaseMessaging.onMessage` would drive the identical path, but that needs the same Firebase project as `push.register` above. Payload→notification mapping is unit-tested; the actual on-screen banner is **real, sandbox-limited**: `initialize()` correctly triggers iOS's real "app wants to send notifications" permission prompt on first use (screenshot below) — granting it needs one manual tap this sandbox has no UI-automation tool for. |
 | `camera.capture` | **Real, sandbox-limited** | `CameraCaptureHandler` (`image_picker`'s camera source), base64-encodes the result. `document` mode reuses the same capture path as `photo` — `image_picker` has no dedicated document-scanning API. Camera hardware doesn't exist on iOS Simulator/Android Emulator without webcam passthrough, so the actual capture call is untested on real hardware here — a platform limitation, not a gap introduced by this work. Every branch (success/cancel/error/invalid-mode) is unit-tested via a fake `ImagePickerPlatform`. |
 | `content.download` | **Real, verified end-to-end** | `ContentDownloadHandler` (`dio` + `path_provider`). SimpleRead has no real content URL yet, so this downloads a small, genuinely public, stable test file (W3C's long-standing `dummy.pdf`) to prove the path for real. **Actually run against the real network** (see "On-device verification"): 13,264 bytes written, matching the server's `Content-Length`. Production wiring swaps the test URL for a real authenticated content URL once SimpleRead's backend exposes one. |
 | `content.download.progress` | **Real, verified end-to-end** | Native→JS listener, fired from `dio`'s `onReceiveProgress` as bytes arrive. The same real run observed 11 progress ticks (2% → 100%). |
@@ -278,12 +287,9 @@ gaps" above for why that became necessary.)
   branches, plus `start()`/`dispose()` against an injected `Stream<Uri>`.
 - `test/bridge/push_notification_service_test.dart` — the `push.received`
   payload → notification title/body mapping in isolation.
-- `test/widget_test.dart` — home screen renders title and all three
-  buttons; tapping "Pause playback"/"Simulate push" with no webview open
-  is deliberately not asserted past rendering for "Simulate push" specifically
-  because it drives a real platform channel with no implementation in the
-  widget-test harness (see the comment in the file, same reasoning as the
-  pre-existing "Open SimpleRead" omission).
+- `test/widget_test.dart` was removed along with the home screen it tested
+  (see "No native home screen" above) — there is currently no widget test
+  for the app's top-level widget tree.
 - `bridge_dispatcher_test.dart` — one comment reworded: it called
   `share.sheet` a stub in a code example; it has a real handler now
   (registered on the dispatcher instance in `webview_screen.dart`, not on

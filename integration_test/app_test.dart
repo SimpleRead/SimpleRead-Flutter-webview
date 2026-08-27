@@ -14,8 +14,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:simpleread_flutter_shell/bridge/push_notification_service.dart';
 import 'package:simpleread_flutter_shell/bridge/push_register_handler.dart';
-import 'package:simpleread_flutter_shell/main.dart' as app;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -47,13 +47,15 @@ void main() {
   });
 
   testWidgets(
-      'push.received: "Simulate push" shows a real local notification',
+      'push.received: showForPushReceived() shows a real local notification',
       (tester) async {
-    app.main();
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('simulate_push_button')));
-    await tester.pumpAndSettle();
+    // Calls the service directly rather than through a dev-screen button —
+    // the home screen (and its "Simulate push" button) was removed so the
+    // app opens straight into the webview; see README.md.
+    await PushNotificationService().showForPushReceived(
+      kind: 'chapter_ready',
+      payload: {'title': 'Capitulo 1'},
+    );
     // Hold the frame so an external screenshot (see README.md) can capture
     // the notification banner before the test process exits.
     await tester.pump(const Duration(seconds: 5));
