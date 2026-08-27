@@ -24,6 +24,33 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- deeplink.navigate: app_links' custom URL scheme,
+	     simpleread://open?path=/learn/x. No Universal Links entry here --
+	     those need a real domain hosting apple-app-site-association, which
+	     this PoC doesn't have; see README.md. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.simpleread.simpleread_flutter_shell</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>simpleread</string>
+			</array>
+		</dict>
+	</array>
+	<!-- camera.capture: image_picker -->
+	<key>NSCameraUsageDescription</key>
+	<string>SimpleRead uses the camera to capture photos and document pages.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SimpleRead reads image metadata for photos and document pages you capture.</string>
+	<!-- calendar.event: add_2_calendar -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>SimpleRead adds live class events to your calendar when you ask it to.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Required by add_2_calendar's location autocomplete UI; SimpleRead does not read your contacts.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
