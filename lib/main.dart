@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'bridge/deeplink_handler.dart';
+import 'navigation/app_shell.dart';
 import 'screens/webview_screen.dart';
 
 /// Kept alive for the app's lifetime (a top-level final, referenced from
@@ -33,7 +34,10 @@ class SimpleReadShellApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const WebviewScreen(),
+      home: AppShell(
+        store: WebviewScreen.navStateStore,
+        body: const WebviewScreen(),
+      ),
     );
   }
 }
