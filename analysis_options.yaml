@@ -9,6 +9,16 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # `build/` holds the resolved Swift Package Manager copies of plugins
+  # (ios/macos `SourcePackages/`) once a build has run. Those vendored
+  # copies include the plugin's OWN test/ and example/ directories -- e.g.
+  # firebase_messaging's ship a test suite that depends on `mockito`, which
+  # is not a dependency of this project and was never meant to be analyzed
+  # as part of it. Exclude the whole tree rather than one plugin at a time.
+  exclude:
+    - build/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

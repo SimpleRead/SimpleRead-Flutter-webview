@@ -37,8 +37,37 @@ dependencies:
   webview_flutter: ^4.14.1
   local_auth: ^3.0.2
 
+  # push.register / push.received (see README: remote delivery needs a real
+  # Firebase project this PoC does not have; local notification display is
+  # real and does not).
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.6.0
+  flutter_local_notifications: ^22.3.0
+
+  # camera.capture
+  image_picker: ^1.2.3
+
+  # content.download / content.download.progress
+  dio: ^5.11.0
+  path_provider: ^2.1.6
+
+  # share.sheet
+  share_plus: ^13.3.0
+
+  # calendar.event -- add_2_calendar chosen over device_calendar: published
+  # 2026-06-15 vs device_calendar's 2024-09-29, and full 160/160 pub points
+  # (device_calendar: 130/160) -- checked on pub.dev before adding, not
+  # assumed, per this PoC's discipline for every dependency.
+  add_2_calendar: ^3.1.1
+
+  # deeplink.navigate -- actively-maintained successor to the abandoned
+  # uni_links (last published 2021); custom URL scheme only, see README.
+  app_links: ^7.2.1
+
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -48,6 +77,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   local_auth_platform_interface: ^1.1.0
+  image_picker_platform_interface: ^2.11.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
