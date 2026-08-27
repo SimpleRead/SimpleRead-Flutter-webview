@@ -33,6 +33,9 @@ abstract final class BridgeRequestEvents {
 abstract final class BridgeFireAndForgetEvents {
   /// Real handler -- stores current playback title/isPlaying.
   static const mediaPlaybackState = 'media.playback.state';
+
+  /// Real handler -- stores the latest per-role nav item list + active href.
+  static const navigationState = 'navigation.state';
 }
 
 /// Unprompted listener events: native -> JS, no request preceded them.

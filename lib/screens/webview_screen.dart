@@ -14,6 +14,7 @@ import '../bridge/playback_state_store.dart';
 import '../bridge/push_register_handler.dart';
 import '../bridge/share_sheet_handler.dart';
 import '../bridge/webview_bridge_registry.dart';
+import '../navigation/nav_state_store.dart';
 
 /// The webview screen: loads the live SimpleRead site UNCHANGED and wires
 /// the `SimpleReadNativeBridge` JavaScriptChannel to the bridge dispatcher.
@@ -22,6 +23,16 @@ import '../bridge/webview_bridge_registry.dart';
 /// is the plain-native half.
 class WebviewScreen extends StatefulWidget {
   const WebviewScreen({super.key});
+
+  /// Holds the latest `navigation.state` event. Static (rather than an
+  /// instance field, unlike [PlaybackStateStore] below) because `AppShell`
+  /// wraps this screen and needs to read it from outside the widget tree --
+  /// same problem [WebviewBridgeRegistry] solves for the `WebViewController`,
+  /// same fix: a long-lived singleton this screen writes into, read from
+  /// outside. Unlike that registry, the store itself (not a wrapper) is the
+  /// singleton, since `NavStateStore`'s public constructor already needs to
+  /// stay unnamed for `NavStateStore()` to keep working in existing tests.
+  static final NavStateStore navStateStore = NavStateStore();
 
   @override
   State<WebviewScreen> createState() => _WebviewScreenState();
@@ -88,6 +99,10 @@ class _WebviewScreenState extends State<WebviewScreen> {
       BridgeFireAndForgetEvents.mediaPlaybackState,
       _playbackState.handle,
     );
+    _dispatcher.registerFireAndForgetHandler(
+      BridgeFireAndForgetEvents.navigationState,
+      WebviewScreen.navStateStore.handle,
+    );
   }
 
   Future<void> _onMessageFromJs(JavaScriptMessage message) async {
@@ -114,6 +129,9 @@ class _WebviewScreenState extends State<WebviewScreen> {
       WebviewBridgeRegistry.instance.value = null;
     }
     _playbackState.dispose();
+    // navStateStore is NOT disposed here: unlike _playbackState it's a
+    // static singleton AppShell holds a listener on for the app's whole
+    // life, not an instance scoped to this screen.
     super.dispose();
   }
 
