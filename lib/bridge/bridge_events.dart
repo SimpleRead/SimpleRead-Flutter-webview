@@ -7,39 +7,50 @@ library;
 /// Request/response events: JS asks (via `postMessage`), native answers (via
 /// `__simpleReadNativeBridgeDispatch` reusing the same message `id`).
 abstract final class BridgeRequestEvents {
-  /// Real handler in this PoC — uses `local_auth` for a real biometric prompt.
+  /// Real handler -- uses `local_auth` for a real biometric prompt.
   static const authBiometric = 'auth.biometric';
 
-  /// Stubbed — no real APNs/FCM wiring in this PoC.
+  /// Real handler -- `firebase_messaging`. Remote push delivery is
+  /// externally blocked (no real Firebase project); see README.
   static const pushRegister = 'push.register';
 
-  /// Stubbed — no real camera capture in this PoC.
+  /// Real handler -- `image_picker` camera capture. Untested on-device (no
+  /// camera hardware on simulator/emulator); see README.
   static const cameraCapture = 'camera.capture';
+
+  /// Real handler -- `dio` + `path_provider`, downloads a public test file
+  /// (production content URL doesn't exist yet); see README.
+  static const contentDownload = 'content.download';
+
+  /// Real handler -- `share_plus`.
+  static const shareSheet = 'share.sheet';
+
+  /// Real handler -- `add_2_calendar`.
+  static const calendarEvent = 'calendar.event';
 }
 
 /// Fire-and-forget events: JS -> native, no response expected.
 abstract final class BridgeFireAndForgetEvents {
-  /// Real handler in this PoC — stores current playback title/isPlaying.
+  /// Real handler -- stores current playback title/isPlaying.
   static const mediaPlaybackState = 'media.playback.state';
 }
 
 /// Unprompted listener events: native -> JS, no request preceded them.
 abstract final class BridgeNativeToJsEvents {
-  /// Real handler in this PoC — the home screen's "Pause playback" button
-  /// drives this.
+  /// Real handler -- the home screen's "Pause playback" button drives this.
   static const mediaPlaybackControl = 'media.playback.control';
 
-  /// Stubbed — no real push provider wired up in this PoC.
+  /// Real handler -- the home screen's "Simulate push" button drives this
+  /// (alongside a real local notification). Real remote delivery via FCM's
+  /// `onMessage` would drive the same dispatch path, but is externally
+  /// blocked (no real Firebase project); see README.
   static const pushReceived = 'push.received';
-}
 
-/// Named in the contract but explicitly NOT implemented in this PoC —
-/// listed here only so the catalog is complete and greppable. See README.md
-/// for why each is out of scope.
-abstract final class BridgeNotYetImplementedEvents {
-  static const contentDownload = 'content.download';
+  /// Real handler -- `dio`'s `onReceiveProgress`, forwarded live during a
+  /// `content.download` request.
   static const contentDownloadProgress = 'content.download.progress';
-  static const shareSheet = 'share.sheet';
-  static const calendarEvent = 'calendar.event';
+
+  /// Real handler -- `app_links`, a plain `simpleread://` custom URL scheme
+  /// (no Universal Links/App Links -- those need a real domain; see README).
   static const deeplinkNavigate = 'deeplink.navigate';
 }
