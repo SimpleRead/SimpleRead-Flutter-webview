@@ -20,13 +20,42 @@ import 'webview_bridge_registry.dart';
 class DeeplinkHandler {
   DeeplinkHandler({
     Stream<Uri>? linkStream,
-    void Function(String path)? dispatch,
+    Future<bool> Function(String path)? dispatch,
+    Future<Uri?> Function()? initialLink,
+    Duration? retryDelay,
   })  : _linkStream = linkStream ?? AppLinks().uriLinkStream,
-        _dispatch = dispatch ?? WebviewBridgeRegistry.instance.sendDeeplinkNavigate;
+        _dispatch = dispatch ?? WebviewBridgeRegistry.instance.sendDeeplinkNavigate,
+        _initialLink = initialLink ?? AppLinks().getInitialLink,
+        _retryDelay = retryDelay ?? const Duration(milliseconds: 200);
 
   final Stream<Uri> _linkStream;
-  final void Function(String path) _dispatch;
+  final Future<bool> Function(String path) _dispatch;
+  final Future<Uri?> Function() _initialLink;
+  final Duration _retryDelay;
   StreamSubscription<Uri>? _subscription;
+
+  /// The cold-start link resolves (and this listener starts) before
+  /// WebviewScreen has necessarily mounted and registered its controller
+  /// with WebviewBridgeRegistry -- dispatch would silently no-op the first
+  /// try. Retries a bounded number of times rather than dropping the link.
+  ///
+  /// A registered controller isn't sufficient either: WKWebView throws
+  /// FWFEvaluateJavaScriptError (a real, reproduced bug) if runJavaScript is
+  /// called before the page itself is ready to evaluate script, which
+  /// happens for the first retry or two right after WebviewScreen mounts.
+  /// That's a thrown exception, not a `false` return -- must be caught here
+  /// too, or it aborts the retry loop instead of just failing this attempt.
+  Future<void> _dispatchWithRetry(String path, {int attemptsLeft = 10}) async {
+    var delivered = false;
+    try {
+      delivered = await _dispatch(path);
+    } catch (_) {
+      delivered = false;
+    }
+    if (delivered || attemptsLeft <= 0) return;
+    await Future<void>.delayed(_retryDelay);
+    await _dispatchWithRetry(path, attemptsLeft: attemptsLeft - 1);
+  }
 
   /// Parses a `simpleread://open?path=/learn/x` URI into the `path` string
   /// the contract's `deeplink.navigate` payload carries. Returns `null` for
@@ -41,13 +70,30 @@ class DeeplinkHandler {
 
   /// Starts listening. Call once, for the app's lifetime (see main.dart) --
   /// deep links must be caught regardless of which screen is on top.
+  ///
+  /// Also checks the link the app was cold-started with, if any.
+  /// `uriLinkStream` only reports links that arrive while the app is
+  /// already running; a link that launched the process in the first place
+  /// is never replayed on that stream -- `AppLinks().getInitialLink()` is
+  /// the only way to see it. Missing this was a real bug: cold-starting the
+  /// app via `simpleread://...` silently did nothing.
   void start() {
     _subscription = _linkStream.listen((uri) {
       final path = parsePath(uri);
       if (path != null) {
-        _dispatch(path);
+        _dispatchWithRetry(path);
       }
     });
+    _handleInitialLink();
+  }
+
+  Future<void> _handleInitialLink() async {
+    final uri = await _initialLink();
+    if (uri == null) return;
+    final path = parsePath(uri);
+    if (path != null) {
+      await _dispatchWithRetry(path);
+    }
   }
 
   void dispose() {

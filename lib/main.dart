@@ -9,6 +9,14 @@ import 'screens/webview_screen.dart';
 final DeeplinkHandler appDeeplinkHandler = DeeplinkHandler();
 
 void main() {
+  // Real bug fixed here: AppLinks() sets up its platform channel eagerly,
+  // both for uriLinkStream and getInitialLink(). Calling it before the
+  // widgets binding exists threw "Binding has not yet been initialized" on
+  // every launch, silently -- no red screen, no dispatch, ever. runApp()
+  // normally initializes the binding implicitly, but that's too late here
+  // since appDeeplinkHandler (a top-level final) constructs AppLinks() the
+  // moment start() first touches it, on the line before runApp().
+  WidgetsFlutterBinding.ensureInitialized();
   appDeeplinkHandler.start();
   runApp(const SimpleReadShellApp());
 }
