@@ -122,7 +122,7 @@ sandbox-limited** with the concrete reason.
 | `content.download.progress` | **Real, verified end-to-end** | Native→JS listener, fired from `dio`'s `onReceiveProgress` as bytes arrive. The same real run observed 11 progress ticks (2% → 100%). |
 | `share.sheet` | **Real, verified** | `ShareSheetHandler` (`share_plus`'s `SharePlus.instance.share()`). Unit-tested (success/dismissed/missing-field/error branches) via an injected fake share function. |
 | `calendar.event` | **Real, verified** | `CalendarEventHandler` (`add_2_calendar`), 1-hour default duration (the contract carries no end time). Unit-tested via an injected fake. |
-| `deeplink.navigate` | **Real, sandbox-limited** | `DeeplinkHandler` (`app_links`), a plain `simpleread://open?path=...` custom URL scheme — deliberately not Universal Links/App Links (those need a real domain hosting `apple-app-site-association`/`assetlinks.json`, which doesn't exist here). `parsePath` and the stream-dispatch wiring are unit-tested against an injected `Stream<Uri>`. On-device: `xcrun simctl openurl booted "simpleread://open?path=/learn/x"` against a booted iPhone 17 (iOS 26.5) simulator **did** resolve to this app — confirmed by the real iOS "Open in 'Simpleread Flutter Shell'?" confirmation sheet (screenshot below), proof the scheme registration is correct at the OS level. Completing the round trip (tapping "Open" so the app actually receives the URL) needs one manual tap this sandbox has no UI-automation tool for. Android: no emulator/AVD is installed in this sandbox at all (`emulator -list-avds` → command not found), so the `adb shell am start ...` equivalent could not be attempted on that platform; only the `AndroidManifest.xml` intent-filter and the unit tests cover it there. |
+| `deeplink.navigate` | **Real, verified end-to-end (iOS)** | `DeeplinkHandler` (`app_links`), a plain `simpleread://open?path=...` custom URL scheme — deliberately not Universal Links/App Links (those need a real domain hosting `apple-app-site-association`/`assetlinks.json`, which doesn't exist here). Three real bugs found and fixed, each verified live with `xcrun simctl openurl` after fixing (see commit `5316887`): (1) `getInitialLink()` was never called, so a cold launch via the scheme was silently dropped; (2) `WidgetsFlutterBinding.ensureInitialized()` was missing before `AppLinks()` touched its platform channel, throwing "Binding has not yet been initialized" on *every* launch — this is why even the already-open-app case failed, not just cold-start; (3) `WKWebView.runJavaScript` throws `FWFEvaluateJavaScriptError` (not a `false` return) when called before the page can evaluate script, right after `WebviewScreen` mounts — needed a bounded retry (10× / 200ms) that catches the throw instead of aborting. Confirmed live, both cold-start and warm (app already open): the page's own log shows `deeplink.navigate RECEIVED: <path>`. `parsePath`, the retry logic, and the initial-link handling are unit-tested (12 tests, `test/bridge/deeplink_handler_test.dart`). Android: not retested this round — see the Android note below. |
 
 ## Before this is useful for anything
 
@@ -223,18 +223,23 @@ argued around):
   consequence of adding it, not an unrelated change.
 
 One thing tried and NOT worked around, on purpose: **completing an OS
-confirmation dialog by simulated tap.** Both `deeplink.navigate`'s "Open in
-app?" sheet and `push.received`'s notification-permission prompt (see
-screenshots below) need exactly one human tap to proceed past. This
-sandbox has no simulator/emulator UI-automation tool, and granting
-`osascript`/System Events Accessibility access to drive the Simulator.app
-window via AppleScript requires an interactive System Settings approval
-this session cannot grant itself (`System Events got an error: osascript
-is not allowed assistive access. (-1719)`, real error, reproduced). Rather
-than claim a tap that didn't happen, both are reported as **real,
-sandbox-limited** in the event table above, with the exact real evidence
-that exists (the confirmation dialog itself appearing, proving the wiring
-is correct up to that point).
+confirmation dialog by simulated tap.** `push.received`'s notification-
+permission prompt (see screenshot below) needs exactly one human tap to
+proceed past. This sandbox has no simulator/emulator UI-automation tool,
+and granting `osascript`/System Events Accessibility access to drive the
+Simulator.app window via AppleScript requires an interactive System
+Settings approval this session cannot grant itself (`System Events got an
+error: osascript is not allowed assistive access. (-1719)`, real error,
+reproduced). Rather than claim a tap that didn't happen, it's reported as
+**real, sandbox-limited** in the event table above, with the exact real
+evidence that exists (the confirmation prompt itself appearing, proving
+the wiring is correct up to that point).
+
+`deeplink.navigate` no longer has this limitation: `xcrun simctl openurl`
+delivers the link without needing a human tap on the OS confirmation sheet
+at all (the sheet only appears the first time iOS asks the user to trust
+the scheme; once trusted, subsequent opens go straight through) — see the
+table row above for the real fix and live verification.
 
 Also worth naming plainly: **no Android emulator exists in this sandbox at
 all** -- `adb devices` returns no devices, and
