@@ -36,6 +36,26 @@ void main() {
       expect(store.value, same(before));
     });
 
+    test('handle() ignores a malformed item inside the list and keeps the prior value', () {
+      final store = NavStateStore();
+      store.handle({
+        'items': [
+          {'type': 'link', 'href': '/learn', 'label': 'Biblioteca', 'icon': 'book'},
+        ],
+        'activeHref': '/learn',
+      });
+      final before = store.value;
+
+      store.handle({
+        'items': [
+          {'type': 'bogus-type'},
+        ],
+        'activeHref': '/x',
+      });
+
+      expect(store.value, same(before));
+    });
+
     test('handle() notifies listeners', () {
       final store = NavStateStore();
       var notified = false;
