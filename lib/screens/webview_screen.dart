@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -138,9 +141,13 @@ class _WebviewScreenState extends State<WebviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SimpleRead'),
-      ),
+      // Header (AppBar) only on iOS -- Android goes straight to the webview.
+      // kIsWeb checked first: Platform.isIOS throws on web (dart:io unsupported there).
+      appBar: !kIsWeb && Platform.isIOS
+          ? AppBar(
+              title: const Text('SimpleRead'),
+            )
+          : null,
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
